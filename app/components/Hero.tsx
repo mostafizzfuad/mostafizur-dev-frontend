@@ -1,4 +1,3 @@
-// app/components/Hero.tsx
 import { Link } from "react-router";
 
 const Hero = ({ name }: { name: string }) => {
