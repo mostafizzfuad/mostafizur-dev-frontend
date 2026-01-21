@@ -1,5 +1,6 @@
 import type { Project } from "~/types";
 import type { Route } from "./+types";
+import ProjectCard from "~/components/project-card";
 
 // Loader ফাংশন (সার্ভার সাইডে রান হবে)
 export async function loader({
@@ -17,7 +18,12 @@ const ProjectsPage = ({ loaderData }: Route.ComponentProps) => {
 	return (
 		<>
 			<h2 className="text-3xl font-bold mb-8 text-white">🚀 Projects</h2>
-			{/* এখানে আমরা পরে প্রজেক্ট লিস্ট দেখাব */}
+
+			<div className="grid gap-6 sm:grid-cols-2">
+				{projects.map((project) => (
+					<ProjectCard key={project.id} project={project} />
+				))}
+			</div>
 		</>
 	);
 };
