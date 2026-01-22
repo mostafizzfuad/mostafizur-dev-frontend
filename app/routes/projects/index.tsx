@@ -17,20 +17,54 @@ const ProjectsPage = ({ loaderData }: Route.ComponentProps) => {
 	const { projects } = loaderData;
 	// console.log(projects);
 
+	// ********************** ক্যাটাগরি ফিল্টারিং এর জন্য state এবং লজিক ********************** //
+	const [selectedCategory, setSelectedCategory] = useState("All");
+
+	// ইউনিক ক্যাটাগরি বের করা
+	const categories = ["All", ...new Set(projects.map((p) => p.category))];
+
+	// ক্যাটাগরি অনুযায়ী ফিল্টার
+	const filteredProjects =
+		selectedCategory === "All"
+			? projects
+			: projects.filter((p) => p.category === selectedCategory);
+
+	// ********************** Pagination এর জন্য state এবং লজিক ********************** //
 	const [currentPage, setCurrentPage] = useState(1);
 	const projectsPerPage = 6; // আপাতত ৬ রাখছি যাতে লেআউট সুন্দর দেখায়
 
+	// Pagination logic (ফিল্টার করা প্রজেক্টের ওপর ভিত্তি করে)
 	// মোট পেজ সংখ্যা বের করা (Math.ceil ব্যবহার করা হয়েছে যাতে পূর্ণসংখ্যা পাওয়া যায়)
-	const totalPages = Math.ceil(projects.length / projectsPerPage);
+	const totalPages = Math.ceil(filteredProjects.length / projectsPerPage);
 
 	// বর্তমান পেজের প্রজেক্ট বের করা
 	const indexOfLast = currentPage * projectsPerPage;
 	const indexOfFirst = indexOfLast - projectsPerPage;
-	const currentProjects = projects.slice(indexOfFirst, indexOfLast);
+	const currentProjects = filteredProjects.slice(indexOfFirst, indexOfLast);
 
 	return (
 		<>
 			<h2 className="text-3xl font-bold mb-8 text-white">🚀 Projects</h2>
+
+			{/* Category Filter */}
+			<div className="flex flex-wrap gap-2 mb-8">
+				{categories.map((cat) => (
+					<button
+						key={cat}
+						onClick={() => {
+							setSelectedCategory(cat);
+							setCurrentPage(1); // ক্যাটাগরি পাল্টালে পেজ ১-এ ফিরে যাবে
+						}}
+						className={`px-3 py-1 rounded text-sm transition cursor-pointer ${
+							selectedCategory === cat
+								? "bg-blue-600 text-white"
+								: "bg-gray-700 text-gray-200 hover:bg-gray-600"
+						}`}
+					>
+						{cat}
+					</button>
+				))}
+			</div>
 
 			<div className="grid gap-6 sm:grid-cols-2">
 				{currentProjects.map((project) => (
