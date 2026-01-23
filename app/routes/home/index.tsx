@@ -1,6 +1,7 @@
 import type { Route } from "./+types/index";
-import FeaturedProjects from "~/components/featured-projects";
 import type { Project } from "~/types";
+import FeaturedProjects from "~/components/featured-projects";
+import AboutPreview from "~/components/about-preview";
 
 export function meta({}: Route.MetaArgs) {
 	return [
@@ -30,6 +31,7 @@ const HomePage = ({ loaderData }: Route.ComponentProps) => {
 		<>
 			{/* ৩. FeaturedProjects এ ডেটা পাঠানো হচ্ছে */}
 			<FeaturedProjects projects={projects} count={2} />
+			<AboutPreview />
 		</>
 	);
 };
