@@ -1,7 +1,8 @@
 import type { Route } from "./+types/index";
-import type { Project } from "~/types";
+import type { Project, PostMeta } from "~/types";
 import FeaturedProjects from "~/components/featured-projects";
 import AboutPreview from "~/components/about-preview";
+import LatestPosts from "~/components/latest-posts";
 
 export function meta({}: Route.MetaArgs) {
 	return [
@@ -13,25 +14,37 @@ export function meta({}: Route.MetaArgs) {
 	];
 }
 
-// ১. লোডার দিয়ে ডেটা ফেচিং
+// লোডার দিয়ে ডেটা ফেচিং
 export async function loader({
 	request,
-}: Route.LoaderArgs): Promise<{ projects: Project[] }> {
-	const res = await fetch(`${import.meta.env.VITE_API_URL}/projects`);
-	const data = await res.json();
+}: Route.LoaderArgs): Promise<{ projects: Project[]; posts: PostMeta[] }> {
+	// প্যারালাল ডেটা ফেচিং
+	const [projectRes, postRes] = await Promise.all([
+		fetch(`${import.meta.env.VITE_API_URL}/projects`),
+		fetch(new URL("/posts-meta.json", request.url)),
+	]);
 
-	return { projects: data };
+	if (!projectRes.ok || !postRes.ok) {
+		throw new Error("Failed to fetch projects or posts");
+	}
+
+	const [projects, posts]: [Project[], PostMeta[]] = await Promise.all([
+		projectRes.json(),
+		postRes.json(),
+	]);
+
+	return { projects, posts };
 }
 
-// ২. কম্পোনেন্টে ডেটা পাস করা
+// কম্পোনেন্টে ডেটা পাস করা
 const HomePage = ({ loaderData }: Route.ComponentProps) => {
-	const { projects } = loaderData;
+	const { projects, posts } = loaderData;
 
 	return (
 		<>
-			{/* ৩. FeaturedProjects এ ডেটা পাঠানো হচ্ছে */}
 			<FeaturedProjects projects={projects} count={2} />
 			<AboutPreview />
+			<LatestPosts posts={posts} limit={3} />
 		</>
 	);
 };
