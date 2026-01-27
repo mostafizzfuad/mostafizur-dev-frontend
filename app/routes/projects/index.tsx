@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { Project } from "~/types";
+import type { Project, StrapiProject, StrapiResponse } from "~/types";
 import type { Route } from "./+types";
 import { AnimatePresence, motion } from "framer-motion";
 import ProjectCard from "~/components/project-card";
@@ -9,10 +9,29 @@ import Pagination from "~/components/Pagination";
 export async function loader({
 	request,
 }: Route.LoaderArgs): Promise<{ projects: Project[] }> {
-	// const res = await fetch("http://localhost:8000/projects");
-	const res = await fetch(`${import.meta.env.VITE_API_URL}/projects`);
-	const data = await res.json();
-	return { projects: data };
+	// Strapi API থেকে ফেচ করা (populate=* দিয়ে রিলেশন/ইমেজ আনা হচ্ছে)
+	const res = await fetch(
+		`${import.meta.env.VITE_API_URL}/projects?populate=*`,
+	);
+
+	const json: StrapiResponse<StrapiProject> = await res.json();
+	// ডেটা ম্যাপিং
+	const projects = json.data.map((item) => ({
+		id: item.id,
+		documentId: item.documentId, // Strapi v5 Document ID
+		title: item.title,
+		description: item.description,
+		// ইমেজ URL ঠিক করা
+		image: item.image?.url
+			? `${import.meta.env.VITE_STRAPI_URL}${item.image.url}`
+			: "/images/no-image.png", // ব্যাকআপ ইমেজ
+		url: item.url,
+		date: item.date,
+		category: item.category,
+		featured: item.featured,
+	}));
+
+	return { projects };
 }
 
 const ProjectsPage = ({ loaderData }: Route.ComponentProps) => {
