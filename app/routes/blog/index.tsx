@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { Route } from "./+types/index";
-import type { PostMeta } from "~/types";
+import type { PostMeta, StrapiResponse, StrapiPost } from "~/types";
 import PostCard from "~/components/PostCard";
 import Pagination from "~/components/Pagination";
 import PostFilter from "~/components/PostFilter";
@@ -8,21 +8,31 @@ import PostFilter from "~/components/PostFilter";
 export async function loader({
 	request,
 }: Route.LoaderArgs): Promise<{ posts: PostMeta[] }> {
-	const url = new URL("/posts-meta.json", request.url);
-	const res = await fetch(url.href);
+	// ১. Strapi থেকে ফেচ করা (populate=image দিয়ে ছবি এবং sort=date:desc দিয়ে নতুন পোস্ট আগে আনা হচ্ছে)
+	const res = await fetch(
+		`${import.meta.env.VITE_API_URL}/posts?populate=image&sort=date:desc`,
+	);
 
 	if (!res.ok) {
 		throw new Error("Failed to fetch posts");
 	}
 
-	const data: PostMeta[] = await res.json();
+	const json: StrapiResponse<StrapiPost> = await res.json();
 
-	// ডেট অনুযায়ী সর্ট করা (Newest First)
-	data.sort((a, b) => {
-		return new Date(b.date).getTime() - new Date(a.date).getTime();
-	});
+	// ২. ডেটা ম্যাপ করা
+	const posts = json.data.map((item) => ({
+		id: item.id,
+		title: item.title,
+		excerpt: item.excerpt,
+		slug: item.slug,
+		date: item.date,
+		// body: item.body, (নোট: PostMeta তে body নেই, তবে এখানে ম্যাপ করা হয়েছে ফিউচার ইউজের জন্য)
+		image: item.image?.url
+			? `${import.meta.env.VITE_STRAPI_URL}${item.image.url}`
+			: "/images/no-image.png",
+	}));
 
-	return { posts: data };
+	return { posts };
 }
 
 const BlogPage = ({ loaderData }: Route.ComponentProps) => {
