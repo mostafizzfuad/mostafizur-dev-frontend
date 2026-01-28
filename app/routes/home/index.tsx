@@ -1,5 +1,11 @@
 import type { Route } from "./+types/index";
-import type { Project, PostMeta, StrapiResponse, StrapiProject } from "~/types";
+import type {
+	Project,
+	PostMeta,
+	StrapiResponse,
+	StrapiProject,
+	StrapiPost,
+} from "~/types";
 import FeaturedProjects from "~/components/featured-projects";
 import AboutPreview from "~/components/about-preview";
 import LatestPosts from "~/components/latest-posts";
@@ -18,12 +24,16 @@ export function meta({}: Route.MetaArgs) {
 export async function loader({
 	request,
 }: Route.LoaderArgs): Promise<{ projects: Project[]; posts: PostMeta[] }> {
-	// ১. প্যারালাল ফেচিং (প্রজেক্ট Strapi থেকে, পোস্ট এখনো JSON থেকে)
+	// ১. প্যারালাল ফেচিং (প্রজেক্ট এবং পোস্ট দুটোই API থেকে)
 	const [projectsRes, postsRes] = await Promise.all([
 		fetch(
 			`${import.meta.env.VITE_API_URL}/projects?filters[featured][$eq]=true&populate=*`,
 		),
-		fetch(new URL("/posts-meta.json", request.url)), // পোস্টগুলো পরে Strapi তে নেব
+		fetch(
+			`${
+				import.meta.env.VITE_API_URL
+			}/posts?sort[0]=date:desc&pagination[limit]=3&populate=image`,
+		),
 	]);
 
 	if (!projectsRes.ok || !postsRes.ok) {
@@ -33,7 +43,7 @@ export async function loader({
 	// ২. রেসপন্স পার্স করা
 	const projectsJson: StrapiResponse<StrapiProject> =
 		await projectsRes.json();
-	const postsJson = await postsRes.json();
+	const postsJson: StrapiResponse<StrapiPost> = await postsRes.json();
 
 	// ৩. Strapi ডেটা ম্যাপ করা
 	const projects = projectsJson.data.map((item: any) => ({
@@ -50,8 +60,18 @@ export async function loader({
 		featured: item.featured,
 	}));
 
-	// পোস্টগুলো এখনো raw JSON হিসেবেই আছে
-	return { projects, posts: postsJson };
+	const posts = postsJson.data.map((item: any) => ({
+		id: item.id,
+		slug: item.slug,
+		title: item.title,
+		excerpt: item.excerpt,
+		date: item.date,
+		image: item.image?.url
+			? `${import.meta.env.VITE_STRAPI_URL}${item.image.url}`
+			: "/images/no-image.png",
+	}));
+
+	return { projects, posts };
 }
 
 // কম্পোনেন্টে ডেটা পাস করা
